@@ -146,39 +146,62 @@ app.patch('/api/libros/:id/status', async (req, res) => {
   }
 });
 
-// 5. OBTENER LEÍDOS CON PAGINACIÓN
+// 5. OBTENER LEÍDOS (Con Filtros y Ordenación)
 app.get('/api/libros/leidos', async (req, res) => {
-  // Leemos la página que pide el usuario (por defecto la 1)
   const page = Number(req.query.page) || 1;
-  const limit = 5; // Número de libros por página
+  const limit = 5;
   const skip = (page - 1) * limit;
+  
+  // Recogemos los parámetros nuevos
+  const { autor, genero, orden } = req.query;
+
+  // Construimos el filtro dinámico
+  const whereClause: any = {
+    status: { nombre: { in: ['TERMINADO', 'VALORADO'] } }
+  };
+  
+  // Si nos piden filtrar por nombre de autor o género
+  if (autor) whereClause.autor = { nombre: String(autor) };
+  if (genero) whereClause.genero = { nombre: String(genero) };
+
+  // Definimos el orden
+  let orderBy: any = { id: 'desc' }; // Por defecto: El último que añadiste (Reciente)
+  if (orden === 'antiguo') orderBy = { id: 'asc' };
+  if (orden === 'alfabetico') orderBy = { titulo: 'asc' };
 
   try {
-    // Ejecutamos dos consultas a la vez: Contar total y Buscar los de esta página
     const [total, libros] = await prisma.$transaction([
-      // 1. Contar cuántos hay en total
-      prisma.libro.count({
-        where: { status: { nombre: { in: ['TERMINADO', 'VALORADO'] } } }
-      }),
-      // 2. Traer solo los 5 de esta página
+      prisma.libro.count({ where: whereClause }),
       prisma.libro.findMany({
-        where: { status: { nombre: { in: ['TERMINADO', 'VALORADO'] } } },
-        include: { autor: true, valoracion: true, status: true },
+        where: whereClause,
+        include: { autor: true, valoracion: true, status: true, genero: true },
         skip: skip,
         take: limit,
-        orderBy: { id: 'desc' } // Mostramos los últimos terminados primero
+        orderBy: orderBy
       })
     ]);
 
     res.json({
       data: libros,
-      total: total,
-      page: page,
+      total,
+      page,
       totalPages: Math.ceil(total / limit)
     });
-
   } catch (error) {
     res.status(500).json({ error: 'Error obteniendo leídos' });
+  }
+});
+
+// 6. DATOS AUXILIARES (Para sugerencias y filtros)
+app.get('/api/datos-generales', async (req, res) => {
+  try {
+    const [autores, generos] = await Promise.all([
+      prisma.autor.findMany({ orderBy: { nombre: 'asc' } }),
+      prisma.genero.findMany({ orderBy: { nombre: 'asc' } })
+    ]);
+    res.json({ autores, generos });
+  } catch (error) {
+    res.status(500).json({ error: 'Error cargando datos' });
   }
 });
 

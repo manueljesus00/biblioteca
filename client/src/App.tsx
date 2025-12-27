@@ -32,6 +32,10 @@ function App() {
   const [leidosPage, setLeidosPage] = useState(1);
   const [leidosData, setLeidosData] = useState({ data: [], total: 0, totalPages: 0, page: 1 });
 
+  // Estados para los filtros
+  const [listas, setListas] = useState<{autores: any[], generos: any[]}>({ autores: [], generos: [] });
+  const [filtros, setFiltros] = useState({ autor: '', genero: '', orden: 'reciente' });
+
   // 1. CARGAR DATOS
   const fetchDashboard = async () => {
     try {
@@ -45,10 +49,21 @@ function App() {
     }
   };
 
+  const fetchListas = async () => {
+    const res = await fetch('http://localhost:3000/api/datos-generales');
+    setListas(await res.json());
+  };
+
+  // Carga inicial
   useEffect(() => { 
     fetchDashboard(); 
-    fetchLeidos(1); // Carga la primera página de leídos al entrar
+    fetchListas();
   }, []);
+
+  // Recargar leídos cuando cambien los filtros o la página
+  useEffect(() => {
+    fetchLeidos(leidosPage);
+  }, [leidosPage, filtros]); // <--- Se ejecuta automáticamente al filtrar
 
   // 2. AÑADIR A WISHLIST
   const handleAddBook = async (e: React.FormEvent) => {
@@ -148,14 +163,17 @@ function App() {
 
   // 5. OBTENER LEÍDOS CON PAGINACIÓN
   const fetchLeidos = async (page: number) => {
-    try {
-      const res = await fetch(`http://localhost:3000/api/libros/leidos?page=${page}`);
-      const json = await res.json();
-      setLeidosData(json);
-      setLeidosPage(page);
-    } catch (err) {
-      console.error(err);
-    }
+    // Convertimos los filtros en parámetros de URL
+    const query = new URLSearchParams({
+      page: page.toString(),
+      autor: filtros.autor,
+      genero: filtros.genero,
+      orden: filtros.orden
+    }).toString();
+
+    const res = await fetch(`http://localhost:3000/api/libros/leidos?${query}`);
+    setLeidosData(await res.json());
+    setLeidosPage(page);
   };
 
   if (loading) return <div style={{padding: 20}}>Cargando biblioteca...</div>;
@@ -221,18 +239,28 @@ function App() {
     <input 
       placeholder="Autor" 
       required 
+      list="lista-autores"
       value={newBook.autor} 
       onChange={e => setNewBook({...newBook, autor: e.target.value})} 
     />
+    <datalist id="lista-autores">
+      {listas.autores.map((a: any) => <option key={a.id} value={a.nombre} />)}
+    </datalist>
     
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 15 }}>
-      <input 
-        placeholder="Género" 
-        required 
-        style={{ margin: 0 }}
-        value={newBook.genero} 
-        onChange={e => setNewBook({...newBook, genero: e.target.value})} 
-      />
+      <div>
+        <input 
+          placeholder="Género" 
+          required 
+          list="lista-generos"
+          style={{ margin: 0, width: '100%' }}
+          value={newBook.genero} 
+          onChange={e => setNewBook({...newBook, genero: e.target.value})} 
+        />
+        <datalist id="lista-generos">
+          {listas.generos.map((g: any) => <option key={g.id} value={g.nombre} />)}
+        </datalist>
+      </div>
       {/* NUEVO SELECTOR DE ESTADO */}
       <select 
         style={{ margin: 0 }}
@@ -346,6 +374,41 @@ function App() {
               }}>
                 Total: {leidosData.total}
               </span>
+            </div>
+
+            {/* BARRA DE FILTROS */}
+            <div style={{ background: '#f8f9fa', padding: 10, borderRadius: 6, marginBottom: 15, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              
+              {/* Filtro Autor */}
+              <select 
+                value={filtros.autor} 
+                onChange={e => { setFiltros({...filtros, autor: e.target.value}); setLeidosPage(1); }}
+                style={{ margin: 0, flex: 1 }}
+              >
+                <option value="">Todos los Autores</option>
+                {listas.autores.map((a: any) => <option key={a.id} value={a.nombre}>{a.nombre}</option>)}
+              </select>
+
+              {/* Filtro Género */}
+              <select 
+                value={filtros.genero} 
+                onChange={e => { setFiltros({...filtros, genero: e.target.value}); setLeidosPage(1); }}
+                style={{ margin: 0, flex: 1 }}
+              >
+                <option value="">Todos los Géneros</option>
+                {listas.generos.map((g: any) => <option key={g.id} value={g.nombre}>{g.nombre}</option>)}
+              </select>
+
+              {/* Orden */}
+              <select 
+                value={filtros.orden} 
+                onChange={e => setFiltros({...filtros, orden: e.target.value})}
+                style={{ margin: 0, width: '150px' }}
+              >
+                <option value="reciente">📅 Más Reciente</option>
+                <option value="antiguo">📅 Más Antiguo</option>
+                <option value="alfabetico">🔤 Alfabético (A-Z)</option>
+              </select>
             </div>
 
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 15 }}>
