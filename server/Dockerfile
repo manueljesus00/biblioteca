@@ -1,7 +1,7 @@
 # Dockerfile para el Backend (Node.js + Express + Prisma)
 
 # Etapa 1: Build
-FROM node:20-alpine AS builder
+FROM node:25-alpine AS builder
 
 WORKDIR /app
 
@@ -22,7 +22,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Etapa 2: Producción
-FROM node:20-alpine
+FROM node:25-alpine
 
 WORKDIR /app
 
