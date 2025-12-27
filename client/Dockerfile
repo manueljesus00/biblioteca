@@ -1,7 +1,7 @@
 # Dockerfile para el Frontend (React + Vite)
 
 # Etapa 1: Build
-FROM node:20-alpine AS builder
+FROM node:25-alpine AS builder
 
 # Argumento de build para la URL del API
 ARG VITE_API_URL=http://localhost:3000
