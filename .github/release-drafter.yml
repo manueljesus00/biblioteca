@@ -1,0 +1,27 @@
+name-template: 'v$NEXT_PATCH_VERSION'
+tag-template: 'v$NEXT_PATCH_VERSION'
+categories:
+  - title: '🚀 Nuevas Características'
+    labels:
+      - 'feature'
+      - 'enhancement'
+  - title: '🐛 Corrección de Errores'
+    labels:
+      - 'fix'
+      - 'bug'
+  - title: '🧰 Mantenimiento'
+    labels:
+      - 'chore'
+      - 'documentation'
+version-resolver:
+  major:
+    labels:
+      - 'major'
+  minor:
+    labels:
+      - 'minor'
+  default: patch
+template: |
+  ## Cambios en esta versión
+  
+  $CHANGES
