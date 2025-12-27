@@ -37,6 +37,29 @@ updates:
   # 3. Configuración para DOCKER (Raíz)
   # ----------------------------------------------------
   - package-ecosystem: "docker"
-    directory: "/"
+    directory: "/client"   # Buscará el Dockerfile en /client
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      client-dependencies:
+        patterns:
+          - "*"
+      
+  - package-ecosystem: "docker"
+    directory: "/server"   # Buscará el Dockerfile en /server
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      client-dependencies:
+        patterns:
+          - "*"
