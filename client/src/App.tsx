@@ -1,14 +1,48 @@
-import { useEffect, useState } from 'react';
-import { BookOpen, CheckCircle, ShoppingCart, Plus, Star } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { BookOpen, CheckCircle, ShoppingCart, Plus } from 'lucide-react';
 
 // --- TIPOS ---
+interface Autor {
+  id: number;
+  nombre: string;
+}
+
+interface Genero {
+  id: number;
+  nombre: string;
+}
+
+interface Status {
+  id: number;
+  nombre: string;
+}
+
+interface Valoracion {
+  id: number;
+  puntuacion: number;
+  comentario?: string;
+  fechaValoracion: string;
+}
+
 interface Libro {
   id: number;
   titulo: string;
-  autor: { nombre: string };
-  genero?: { nombre: string };
-  status?: { nombre: string };
-  valoracion?: { puntuacion: number };
+  isbn?: string;
+  autor: Autor;
+  genero?: Genero;
+  status?: Status;
+  valoracion?: Valoracion;
+}
+
+interface RelacionAutorGenero {
+  autor: Autor;
+  genero: Genero;
+}
+
+interface Listas {
+  autores: Autor[];
+  generos: Genero[];
+  relaciones: RelacionAutorGenero[];
 }
 
 interface DashboardData {
@@ -17,6 +51,8 @@ interface DashboardData {
   leidos: Libro[];
   pendientes: Libro[];
 }
+
+
 
 // --- COMPONENTE PRINCIPAL ---
 function App() {
@@ -33,7 +69,7 @@ function App() {
   const [leidosData, setLeidosData] = useState({ data: [], total: 0, totalPages: 0, page: 1 });
 
   // Estados para los filtros
-  const [listas, setListas] = useState<{ autores: any[], generos: any[], relaciones: any[] }>({
+  const [listas, setListas] = useState<Listas>({
     autores: [],
     generos: [],
     relaciones: []
@@ -58,6 +94,21 @@ function App() {
     setListas(await res.json());
   };
 
+  // 5. OBTENER LEÍDOS CON PAGINACIÓN
+  const fetchLeidos = useCallback(async (page: number) => {
+    // Convertimos los filtros en parámetros de URL
+    const query = new URLSearchParams({
+      page: page.toString(),
+      autor: filtros.autor,
+      genero: filtros.genero,
+      orden: filtros.orden
+    }).toString();
+
+    const res = await fetch(`http://localhost:3000/api/libros/leidos?${query}`);
+    setLeidosData(await res.json());
+    setLeidosPage(page);
+  }, [filtros]); // Depende de filtros
+
   // Carga inicial
   useEffect(() => {
     fetchDashboard();
@@ -67,7 +118,7 @@ function App() {
   // Recargar leídos cuando cambien los filtros o la página
   useEffect(() => {
     fetchLeidos(leidosPage);
-  }, [leidosPage, filtros]); // <--- Se ejecuta automáticamente al filtrar
+  }, [leidosPage, filtros, fetchLeidos]); // <--- Se ejecuta automáticamente al filtrar
 
   // 2. AÑADIR A WISHLIST
   const handleAddBook = async (e: React.FormEvent) => {
@@ -149,9 +200,9 @@ function App() {
       setBuyForm({ precio: '', tienda: '', referido: '' });
       fetchDashboard();
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("🔥 ERROR CRÍTICO:", err);
-      alert("Fallo al guardar: " + err.message);
+      alert("Fallo al guardar: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -165,27 +216,12 @@ function App() {
     fetchDashboard();
   };
 
-  // 5. OBTENER LEÍDOS CON PAGINACIÓN
-  const fetchLeidos = async (page: number) => {
-    // Convertimos los filtros en parámetros de URL
-    const query = new URLSearchParams({
-      page: page.toString(),
-      autor: filtros.autor,
-      genero: filtros.genero,
-      orden: filtros.orden
-    }).toString();
-
-    const res = await fetch(`http://localhost:3000/api/libros/leidos?${query}`);
-    setLeidosData(await res.json());
-    setLeidosPage(page);
-  };
-
   if (loading) return <div style={{ padding: 20 }}>Cargando biblioteca...</div>;
 
   // --- LÓGICA DE FILTROS EN CASCADA ---
   
   // 1. Obtener Autores Disponibles (según el género seleccionado)
-  const autoresDisponibles = filtros.genero
+  const autoresDisponibles: string[] = filtros.genero
     ? Array.from(new Set( // Usamos Set para eliminar duplicados
         listas.relaciones
           .filter(r => r.genero.nombre === filtros.genero)
@@ -195,7 +231,7 @@ function App() {
     // (Si no hay filtro, mostramos todos los autores que tengan libros leídos)
 
   // 2. Obtener Géneros Disponibles (según el autor seleccionado)
-  const generosDisponibles = filtros.autor
+  const generosDisponibles: string[] = filtros.autor
     ? Array.from(new Set(
         listas.relaciones
           .filter(r => r.autor.nombre === filtros.autor)
@@ -275,7 +311,7 @@ function App() {
                 onChange={e => setNewBook({ ...newBook, autor: e.target.value })}
               />
               <datalist id="lista-autores">
-                {listas.autores.map((a: any) => <option key={a.id} value={a.nombre} />)}
+                {listas.autores.map((a) => <option key={a.id} value={a.nombre} />)}
               </datalist>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 15 }}>
@@ -289,7 +325,7 @@ function App() {
                     onChange={e => setNewBook({ ...newBook, genero: e.target.value })}
                   />
                   <datalist id="lista-generos">
-                    {listas.generos.map((g: any) => <option key={g.id} value={g.nombre} />)}
+                    {listas.generos.map((g) => <option key={g.id} value={g.nombre} />)}
                   </datalist>
                 </div>
                 {/* NUEVO SELECTOR DE ESTADO */}
@@ -422,7 +458,7 @@ function App() {
                     style={{ margin: 0, width: '100%' }}
                   >
                     <option value="">Todos los Autores</option>
-                    {autoresDisponibles.map((nombre: string) => (
+                    {autoresDisponibles.map((nombre) => (
                       <option key={nombre} value={nombre}>{nombre}</option>
                     ))}
                   </select>
@@ -439,7 +475,7 @@ function App() {
                     style={{ margin: 0, width: '100%' }}
                   >
                     <option value="">Todos los Géneros</option>
-                    {generosDisponibles.map((nombre: string) => (
+                    {generosDisponibles.map((nombre) => (
                       <option key={nombre} value={nombre}>{nombre}</option>
                     ))}
                   </select>
@@ -486,7 +522,7 @@ function App() {
                 </tr>
               </thead>
               <tbody>
-                {leidosData.data.map((libro: any) => (
+                {leidosData.data.map((libro: Libro) => (
                   <tr key={libro.id} style={{ borderBottom: '1px solid #eee' }}>
                     <td style={{ padding: '8px 0' }}>{libro.titulo}</td>
                     <td>{libro.autor.nombre}</td>
