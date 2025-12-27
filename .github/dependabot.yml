@@ -1,0 +1,42 @@
+version: 2
+updates:
+  # ----------------------------------------------------
+  # 1. Configuración para el FRONTEND (Client)
+  # ----------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/client"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      client-dependencies:
+        patterns:
+          - "*"
+
+  # ----------------------------------------------------
+  # 2. Configuración para el BACKEND (Server)
+  # ----------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/server"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      server-dependencies:
+        patterns:
+          - "*"
+  # ----------------------------------------------------
+  # 3. Configuración para DOCKER (Raíz)
+  # ----------------------------------------------------
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
