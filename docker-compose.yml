@@ -50,6 +50,11 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
+      args:
+        # URL del backend API - Cambiar seg\u00fan entorno
+        # Desarrollo local: http://localhost:3000
+        # Producci\u00f3n AWS/Cloud: https://api.tu-dominio.com o http://IP_PUBLICA:3000
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
     container_name: book_tracker_frontend
     restart: always
     ports:
@@ -58,9 +63,6 @@ services:
       - backend
     networks:
       - biblioteca-network
-    environment:
-      # Variable para la URL del backend (se puede usar en tiempo de build)
-      VITE_API_URL: "http://localhost:3000"
 
 networks:
   biblioteca-network:

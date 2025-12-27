@@ -1,6 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { BookOpen, CheckCircle, ShoppingCart, Plus } from 'lucide-react';
 
+// Configuración de la URL del API
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 // --- TIPOS ---
 interface Autor {
   id: number;
@@ -79,7 +82,7 @@ function App() {
   // 1. CARGAR DATOS
   const fetchDashboard = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/dashboard');
+      const res = await fetch(`${API_URL}/api/dashboard`);
       const json = await res.json();
       setData(json);
     } catch (err) {
@@ -90,7 +93,7 @@ function App() {
   };
 
   const fetchListas = async () => {
-    const res = await fetch('http://localhost:3000/api/datos-generales');
+    const res = await fetch(`${API_URL}/api/datos-generales`);
     setListas(await res.json());
   };
 
@@ -104,7 +107,7 @@ function App() {
       orden: filtros.orden
     }).toString();
 
-    const res = await fetch(`http://localhost:3000/api/libros/leidos?${query}`);
+    const res = await fetch(`${API_URL}/api/libros/leidos?${query}`);
     setLeidosData(await res.json());
     setLeidosPage(page);
   }, [filtros]); // Depende de filtros
@@ -124,7 +127,7 @@ function App() {
   const handleAddBook = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:3000/api/libros', {
+      const res = await fetch(`${API_URL}/api/libros`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newBook)
@@ -176,7 +179,7 @@ function App() {
     console.log("3. 🚀 Enviando petición al servidor...");
 
     try {
-      const response = await fetch('http://localhost:3000/api/compra', {
+      const response = await fetch(`${API_URL}/api/compra`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -208,7 +211,7 @@ function App() {
 
   // 4. CAMBIAR ESTADO (Pendiente -> Leyendo -> Terminado)
   const updateStatus = async (id: number, status: string) => {
-    await fetch(`http://localhost:3000/api/libros/${id}/status`, {
+    await fetch(`${API_URL}/api/libros/${id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nuevoStatus: status })
