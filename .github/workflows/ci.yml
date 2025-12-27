@@ -1,0 +1,60 @@
+name: CI - Code & Docker
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # ------------------------------------------------------------
+  # JOB 1: Calidad del Código (Tests rápidos)
+  # ------------------------------------------------------------
+  code-quality:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [client, server] # Ejecuta esto para client y server en paralelo
+    
+    defaults:
+      run:
+        working-directory: ./${{ matrix.service }}
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          # Ajuste para que encuentre el lockfile correcto en el monorepo
+          cache-dependency-path: './${{ matrix.service }}/package-lock.json'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Solo generamos Prisma si estamos en el server
+      - name: Generar Prisma Client (Solo Server)
+        if: matrix.service == 'server'
+        run: npx prisma generate
+
+      - name: Linting (Estilo de código)
+        run: npm run lint --if-present
+
+      - name: Ejecutar Tests
+        run: npm test --if-present
+
+  # ------------------------------------------------------------
+  # JOB 2: Verificación de Docker (¿Compilan los contenedores?)
+  # ------------------------------------------------------------
+  docker-build-check:
+    needs: code-quality # Solo intenta construir si el código pasó los tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      # Esto verificará que AMBOS (client y server) se construyen bien
+      - name: Construir imágenes con Docker Compose
+        run: docker compose build
