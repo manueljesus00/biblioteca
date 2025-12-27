@@ -26,6 +26,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Instalar OpenSSL (requerido por Prisma)
+RUN apk add --no-cache openssl
+
 # Copiar archivos de dependencias
 COPY package*.json ./
 COPY prisma ./prisma/
@@ -33,8 +36,14 @@ COPY prisma ./prisma/
 # Instalar solo dependencias de producción
 RUN npm ci --only=production
 
-# Copiar Prisma Client generado y código compilado desde builder
+# Instalar Prisma CLI como devDependency (necesario para migraciones)
+RUN npm install prisma --save-dev
+
+# Copiar Prisma Client generado desde builder (con binaryTargets correctos)
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+# Copiar código compilado
 COPY --from=builder /app/dist ./dist
 
 # Exponer el puerto del backend
