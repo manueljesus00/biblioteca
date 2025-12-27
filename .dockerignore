@@ -1,0 +1,45 @@
+# Ignorar node_modules de ambos proyectos
+node_modules
+*/node_modules
+**/node_modules
+
+# Logs
+npm-debug.log
+yarn-error.log
+*.log
+
+# Archivos de entorno
+.env
+.env.local
+.env.*.local
+
+# Archivos de build
+dist
+build
+*/dist
+*/build
+
+# Git
+.git
+.gitignore
+.github
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Documentación
+README.md
+CHANGELOG.md
+*.md
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore

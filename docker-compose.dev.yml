@@ -1,0 +1,68 @@
+# Docker Compose para DESARROLLO con hot reload
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: book_tracker_db_dev
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mis_libros
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    networks:
+      - biblioteca-network-dev
+
+  # Backend con hot reload
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.dev
+    container_name: book_tracker_backend_dev
+    restart: always
+    environment:
+      DATABASE_URL: "postgresql://user:password@db:5432/mis_libros"
+      PORT: 3000
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    networks:
+      - biblioteca-network-dev
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    command: npm run dev
+
+  # Frontend con Vite dev server
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.dev
+    container_name: book_tracker_frontend_dev
+    restart: always
+    environment:
+      VITE_API_URL: "http://localhost:3000"
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - biblioteca-network-dev
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    command: npm run dev
+
+networks:
+  biblioteca-network-dev:
+    driver: bridge
+
+volumes:
+  postgres_data_dev:
