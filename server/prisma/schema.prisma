@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- TUS MODELOS ---
+model Status {
+  id     Int     @id @default(autoincrement()) @map("id_status")
+  nombre String  @unique @map("nombre_status")
+  libros Libro[]
+  @@map("status")
+}
+
+model Genero {
+  id     Int     @id @default(autoincrement()) @map("id_genero")
+  nombre String  @unique @map("nombre_genero")
+  libros Libro[]
+  @@map("genero")
+}
+
+model Autor {
+  id     Int     @id @default(autoincrement()) @map("id_autor")
+  nombre String  @unique @map("nombre_autor")
+  libros Libro[]
+  @@map("autor")
+}
+
+model Tienda {
+  id      Int      @id @default(autoincrement()) @map("id_tienda")
+  nombre  String   @unique @map("nombre_tienda")
+  compras Compra[]
+  @@map("tienda")
+}
+
+model Compra {
+  id          Int      @id @default(autoincrement()) @map("id_compra")
+  precio      Decimal  @db.Decimal(10, 2)
+  fechaCompra DateTime @default(now()) @map("fecha_compra") @db.Date
+  referido    String?  
+  idTienda    Int      @map("id_tienda")
+  tienda      Tienda   @relation(fields: [idTienda], references: [id])
+  libros      Libro[]  
+  @@map("compra")
+}
+
+model Libro {
+  id       Int     @id @default(autoincrement()) @map("id_libro")
+  titulo   String
+  isbn     String? @unique
+  idAutor  Int     @map("id_autor")
+  autor    Autor   @relation(fields: [idAutor], references: [id])
+  idGenero Int     @map("id_genero")
+  genero   Genero  @relation(fields: [idGenero], references: [id])
+  idStatus Int     @map("id_status")
+  status   Status  @relation(fields: [idStatus], references: [id])
+  idCompra Int?    @map("id_compra")
+  compra   Compra? @relation(fields: [idCompra], references: [id])
+  valoracion Valoracion?
+  @@map("libro")
+}
+
+model Valoracion {
+  id              Int      @id @default(autoincrement()) @map("id_valoracion")
+  fechaValoracion DateTime @default(now()) @map("fecha_valoracion") @db.Date
+  puntuacion      Int      
+  comentario      String?  @db.Text
+  idLibro         Int      @unique @map("id_libro")
+  libro           Libro    @relation(fields: [idLibro], references: [id])
+  @@map("valoracion")
+}
