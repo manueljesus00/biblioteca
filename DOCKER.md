@@ -196,7 +196,7 @@ docker push tu-usuario/biblioteca-frontend:v1.0.0
 
 ### Backend
 
-Configuradas en `docker-compose.yml`:
+Configuradas en `docker-compose.yml` o en `server/.env`:
 
 ```yaml
 DATABASE_URL: "postgresql://user:password@db:5432/mis_libros"
@@ -204,21 +204,75 @@ PORT: 3000
 NODE_ENV: production
 ```
 
-Para cambiarlas, edita el `docker-compose.yml` o crea un archivo `.env`:
-
-```env
-DATABASE_URL=postgresql://user:password@db:5432/mis_libros
-PORT=3000
-NODE_ENV=production
-```
-
 ### Frontend
 
-```yaml
-VITE_API_URL: "http://localhost:3000"
+La URL del API se configura en tiempo de **build**:
+
+```bash
+# Opción 1: Variable de entorno del sistema
+export VITE_API_URL=http://TU_IP:3000
+docker-compose build frontend
+
+# Opción 2: Archivo .env en la raíz
+echo "VITE_API_URL=http://TU_IP:3000" > .env
+docker-compose build frontend
+
+# Opción 3: Argumento directo en docker-compose
+VITE_API_URL=http://TU_IP:3000 docker-compose up -d --build
 ```
 
-**Nota**: Las variables `VITE_*` deben configurarse en tiempo de **build**, no runtime.
+**⚠️ Importante**: Las variables `VITE_*` deben configurarse **antes** de construir la imagen del frontend, ya que se incrustan en el código JavaScript durante el build.
+
+## 🌍 Configuración para Producción (AWS/Cloud)
+
+### AWS EC2
+
+1. **Configurar Security Group**:
+   - Puerto 80 (HTTP) - Frontend
+   - Puerto 3000 (TCP) - Backend API
+   - Puerto 5432 (TCP) - PostgreSQL (solo si usas contenedor)
+
+2. **Configurar `.env`**:
+```env
+# Usa tu IP pública de EC2 o dominio
+VITE_API_URL=http://3.123.45.67:3000
+
+# Si usas RDS
+DATABASE_URL=postgresql://admin:password@tu-rds.region.rds.amazonaws.com:5432/biblioteca
+```
+
+3. **Desplegar**:
+```bash
+docker-compose build
+docker-compose up -d
+```
+
+### Con Dominio Personalizado
+
+Si tienes un dominio (ej: `tuapp.com`):
+
+```env
+# .env
+VITE_API_URL=https://api.tuapp.com
+```
+
+Configura un reverse proxy con Nginx o usa AWS ALB (Application Load Balancer).
+
+### AWS RDS + EC2
+
+Para producción seria, usa RDS para la base de datos:
+
+```yaml
+# docker-compose.yml - Comentar el servicio 'db'
+services:
+  # db:  # <-- Comentar todo el servicio db
+  #   image: postgres:15-alpine
+  #   ...
+  
+  backend:
+    environment:
+      DATABASE_URL: "postgresql://admin:password@tu-rds.amazonaws.com:5432/biblioteca"
+```
 
 ## 🔍 Troubleshooting
 
