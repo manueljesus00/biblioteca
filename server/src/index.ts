@@ -195,11 +195,23 @@ app.get('/api/libros/leidos', async (req, res) => {
 // 6. DATOS AUXILIARES (Para sugerencias y filtros)
 app.get('/api/datos-generales', async (req, res) => {
   try {
-    const [autores, generos] = await Promise.all([
+    const [autores, generos, librosLeidos] = await Promise.all([
+      // Listas completas para el autocompletado del formulario
       prisma.autor.findMany({ orderBy: { nombre: 'asc' } }),
-      prisma.genero.findMany({ orderBy: { nombre: 'asc' } })
+      prisma.genero.findMany({ orderBy: { nombre: 'asc' } }),
+      
+      // Sacamos las relaciones solo de los libros leídos
+      prisma.libro.findMany({
+        where: { status: { nombre: { in: ['TERMINADO', 'VALORADO'] } } },
+        select: {
+          autor: { select: { nombre: true } },
+          genero: { select: { nombre: true } }
+        }
+      })
     ]);
-    res.json({ autores, generos });
+
+    // Enviamos las listas puras y un mapa de relaciones
+    res.json({ autores, generos, relaciones: librosLeidos });
   } catch (error) {
     res.status(500).json({ error: 'Error cargando datos' });
   }
